@@ -20,8 +20,7 @@ async fn main() -> anyhow::Result<()> {
         .with_max_level(level)
         .finish();
     tracing::subscriber::set_global_default(subscriber).unwrap();
-    let mut seed = [1u8; 32];
-    seed.try_fill(&mut thread_rng())?;
+    let seed = [1u8; 32];
 
     let transport = Arc::new(LightningTransport::new(&seed, 2024)?);
     let storage = Arc::new(SledStorage::new("/Users/ben/Development/tauri")?);
