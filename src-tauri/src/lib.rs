@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use ddk::{
-    oracle::KormirOracleClient, storage::SledStorage, transport::lightning::LightningTransport,
-    DlcDevKit,
+    oracle::kormir::KormirOracleClient, storage::memory::MemoryStorage,
+    transport::memory::MemoryTransport, DlcDevKit,
 };
 
 pub struct State {
-    pub ddk: DlcDevKit<LightningTransport, SledStorage, KormirOracleClient>,
+    pub ddk: DlcDevKit<MemoryTransport, MemoryStorage, KormirOracleClient>,
 }
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
