@@ -1,3 +1,4 @@
+use chrono::{Duration, Utc};
 use std::{
     str::FromStr,
     sync::Arc,
@@ -11,6 +12,7 @@ use ddk::{
         oracle_msgs::{OracleAnnouncement, OracleAttestation},
         Message, OfferDlc, SignDlc,
     },
+    Transport,
 };
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -26,11 +28,16 @@ pub async fn create_oracle_announcement(
     state: State<'_, Arc<DdkState>>,
     request: CreateOracleAnnouncement,
 ) -> Result<(OracleAnnouncement, String), String> {
-    let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    // Get current time and add 30 minutes
+    let future_time = Utc::now() + Duration::minutes(30);
+
+    // Get Unix timestamp
+    let unix_timestamp = future_time.timestamp();
+    println!("UNIX TIMESTAMP {}", unix_timestamp);
     let announcement = state
         .ddk
         .oracle
-        .create_event(vec![request.one, request.two], time.as_millis() as u32)
+        .create_event(vec![request.one, request.two], unix_timestamp as u32)
         .await
         .map_err(|e| {
             format!(
@@ -203,20 +210,21 @@ pub async fn sign_and_broadcast_offer(
         .map_err(|_| "Malformed public key.")?;
     let sign_dlc: SignDlc =
         serde_json::from_str(&sign).map_err(|_| "Malformed offer".to_string())?;
-    let accept = state
+    state
         .ddk
         .manager
         .on_dlc_message(&Message::Sign(sign_dlc), counter_party)
         .map_err(|e| format!("Could not accept contract. error={}", e.to_string()))?;
 
-    match accept.unwrap() {
-        Message::Sign(s) => {
-            let sign_bytes = serde_json::to_vec(&s).unwrap();
-            let sign_hex = hex::encode(&sign_bytes);
-            Ok(sign_hex)
-        }
-        _ => Err("Not a sign contract.".to_string()),
-    }
+    // match accept.unwrap() {
+    //     Message::Sign(s) => {
+    //         let sign_bytes = serde_json::to_vec(&s).unwrap();
+    //         let sign_hex = hex::encode(&sign_bytes);
+    //         Ok(sign_hex)
+    //     }
+    //     _ => Err("Not a sign contract.".to_string()),
+    // }
+    Ok("signed!".to_string())
 }
 
 #[tauri::command]
@@ -228,4 +236,35 @@ pub async fn new_address(state: State<'_, Arc<DdkState>>) -> Result<String, Stri
         .map_err(|_| format!("Could not get address"))?
         .address
         .to_string())
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct WalletBalance {
+    pub confirmed: u64,
+    pub unconfirmed: u64,
+}
+
+#[tauri::command]
+pub fn sync_and_get_balance(state: State<'_, Arc<DdkState>>) -> Result<WalletBalance, String> {
+    state
+        .ddk
+        .wallet
+        .sync()
+        .map_err(|e| format!("Could not sync wallet. error={}", e.to_string()))?;
+
+    let balance = state
+        .ddk
+        .wallet
+        .get_balance()
+        .map_err(|e| format!("Could not get balance. error={}", e.to_string()))?;
+
+    Ok(WalletBalance {
+        confirmed: balance.confirmed.to_sat(),
+        unconfirmed: balance.trusted_pending.to_sat() + balance.untrusted_pending.to_sat(),
+    })
+}
+
+#[tauri::command]
+pub fn pubkey(state: State<'_, Arc<DdkState>>) -> Result<String, String> {
+    Ok(state.ddk.transport.public_key().to_string())
 }

@@ -1,4 +1,5 @@
 mod functions;
+pub mod io;
 
 use std::sync::Arc;
 
@@ -26,6 +27,8 @@ pub fn run(ddk: Arc<DdkState>) {
             functions::sign_and_broadcast_offer,
             functions::receive_bitcoin,
             functions::new_address,
+            functions::sync_and_get_balance,
+            functions::pubkey
         ])
         .setup(move |app| {
             let address = ddk_clone
