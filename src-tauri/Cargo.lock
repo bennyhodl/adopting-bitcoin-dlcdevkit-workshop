@@ -945,6 +945,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "ddk",
+ "ddk-payouts",
+ "hex",
+ "reqwest 0.12.9",
  "serde",
  "serde_json",
  "tauri",
@@ -953,6 +956,19 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "ddk-payouts"
+version = "0.0.12"
+dependencies = [
+ "anyhow",
+ "bitcoin",
+ "dlc",
+ "dlc-manager",
+ "dlc-trie",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
