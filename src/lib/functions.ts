@@ -70,3 +70,7 @@ export interface WalletBalance {
 export async function syncAndGetBalance(): Promise<WalletBalance> {
   return invoke("sync_and_get_balance");
 }
+
+export async function getPublicKey(): Promise<string> {
+  return invoke("pubkey");
+}

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { OracleAnnouncement, syncAndGetBalance } from '@/lib/functions';
+import { getPublicKey, OracleAnnouncement, syncAndGetBalance } from '@/lib/functions';
 
 interface DlcDevKitContextType {
   isOfferer: boolean | null;
@@ -20,11 +20,13 @@ interface DlcDevKitContextType {
   };
   setBalance: (balance: { confirmed: number; unconfirmed: number }) => void;
   getBalance: () => void
+  publicKey: string
 }
 
 const DlcDevKitContext = createContext<DlcDevKitContextType | undefined>(undefined);
 
 export function DlcDevKitProvider({ children }: { children: ReactNode }) {
+  const [publicKey, setPublicKey] = useState("")
   const [isOfferer, setIsOfferer] = useState<boolean | null>(null);
   const [oracleAnnouncement, setOracleAnnouncement] = useState<{ ann: OracleAnnouncement, hex: string } | null>(null);
   const [outcomes, setOutcomes] = useState<{ one: string, two: string }>({ one: "", two: "" })
@@ -41,8 +43,14 @@ export function DlcDevKitProvider({ children }: { children: ReactNode }) {
     setBalance(balance)
   }
 
+  const getPubkey = async () => {
+    const pubkey = await getPublicKey()
+    setPublicKey(pubkey)
+  }
+
   useEffect(() => {
     getBalance()
+    getPubkey()
   }, [])
 
   const value = {
@@ -60,7 +68,8 @@ export function DlcDevKitProvider({ children }: { children: ReactNode }) {
     setTxid,
     balance,
     setBalance,
-    getBalance
+    getBalance,
+    publicKey
   };
 
   return (

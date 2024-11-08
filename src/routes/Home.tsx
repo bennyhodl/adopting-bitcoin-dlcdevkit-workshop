@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button'
 import { syncAndGetBalance, WalletBalance } from '@/lib/functions'
 import { OracleAnnouncementComponent } from './walkthrough/OracleAnnouncement'
 import { useDlcDevKit } from '@/hooks/use-dlcdevkit'
+import { CreateOfferComponent } from './walkthrough/CreateOffer'
+import { SignContract } from './walkthrough/SignContract'
 interface StepContentProps {
   title: string
   content: string
@@ -41,12 +43,12 @@ const baseSteps: Step[] = [
 
 const offererSteps: Step[] = [
   { title: 'Create an oracle announcement', content: 'Create the oracle announcement for your bet.', component: <OracleAnnouncementComponent /> },
-  { title: 'Offer a contract', content: 'Create and offer the contract to your counterparty.', component: <Welcome /> },
-  { title: 'Wait for signature', content: 'Wait for your counterparty to sign the contract.', component: <Welcome /> }
+  { title: 'Offer a contract', content: 'Create and offer the contract to your counterparty.', component: <CreateOfferComponent /> },
+  { title: 'Wait for signature', content: 'Wait for your counterparty to sign the contract.', component: <SignContract /> }
 ]
 
 const acceptorSteps: Step[] = [
-  { title: 'Wait for oracle announcement', content: 'Wait for the offerer to create the oracle announcement.', component: <Welcome /> },
+  { title: 'Get your offer', content: 'Wait for the offerer to create the oracle announcement.', component: <Welcome /> },
   { title: 'Accept the contract', content: 'Review and accept the contract from the offerer.', component: <Welcome /> },
   { title: 'Sign the contract', content: 'Sign the accepted contract.', component: <Welcome /> }
 ]
@@ -99,8 +101,11 @@ export default function Home() {
       <main className="flex flex-col items-center justify-between h-screen">
         <header className="p-4 bg-primary text-primary-foreground w-screen flex flex-row justify-between px-8">
           <h1 className="text-2xl font-bold">Handshake Bets with DlcDevK</h1>
-          <div className='flex flex-row items-center'>
-            <p className='text-white pr-4'>{JSON.stringify(context.balance)}</p>
+          <div className='flex flex-row items-center text-end'>
+            <div className='flex flex-col'>
+              <p className='text-white pr-4'>Balance: {JSON.stringify(context.balance)}</p>
+              <p className='text-white pr-4'>Pubkey: {context.publicKey}</p>
+            </div>
             <Button onClick={async () => await context.getBalance()} className='bg-white text-black hover:bg-gray-400'>Sync Wallet</Button>
           </div>
         </header>
