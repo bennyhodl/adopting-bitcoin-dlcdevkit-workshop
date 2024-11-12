@@ -1,8 +1,5 @@
-import { Link } from "react-router-dom"
-import { Menu, Search, Bell, User } from "lucide-react"
-
+import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 
 export default function Header() {

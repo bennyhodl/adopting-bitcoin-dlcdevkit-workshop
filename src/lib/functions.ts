@@ -13,7 +13,7 @@ export interface OracleAnnouncement {
 }
 
 export interface SignOracleAnnouncement {
-  oracle_announcement: OracleAnnouncement;
+  event_id: string;
   outcome: string;
 }
 
@@ -32,7 +32,8 @@ export async function createOracleAnnouncement(
 
 export async function signOracleAnnouncement(
   request: SignOracleAnnouncement
-): Promise<[any, string]> {
+): Promise<string> {
+  console.log("Sending to tauri ", request);
   return invoke("sign_oracle_announcement", { request });
 }
 
@@ -73,4 +74,14 @@ export async function syncAndGetBalance(): Promise<WalletBalance> {
 
 export async function getPublicKey(): Promise<string> {
   return invoke("pubkey");
+}
+
+export interface Contract {
+  contractId: string | null;
+  pnl: number | null;
+  fundingTxid: string | null;
+}
+
+export async function getContract(): Promise<Contract> {
+  return invoke("get_contract");
 }

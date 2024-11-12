@@ -25,6 +25,7 @@ pub fn run(ddk: Arc<DdkState>) {
             functions::create_offer,
             functions::accept_offer,
             functions::sign_and_broadcast_offer,
+            functions::get_contract,
             functions::receive_bitcoin,
             functions::new_address,
             functions::sync_and_get_balance,

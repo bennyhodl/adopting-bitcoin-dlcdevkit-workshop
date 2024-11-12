@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { getPublicKey, OracleAnnouncement, syncAndGetBalance } from '@/lib/functions';
+import { Contract, getPublicKey, OracleAnnouncement, syncAndGetBalance, getContract } from '@/lib/functions';
 
 interface DlcDevKitContextType {
   isOfferer: boolean | null;
@@ -21,22 +21,60 @@ interface DlcDevKitContextType {
   setBalance: (balance: { confirmed: number; unconfirmed: number }) => void;
   getBalance: () => void
   publicKey: string
+  contract: Contract
+  getContract: () => void;
 }
 
 const DlcDevKitContext = createContext<DlcDevKitContextType | undefined>(undefined);
 
 export function DlcDevKitProvider({ children }: { children: ReactNode }) {
   const [publicKey, setPublicKey] = useState("")
-  const [isOfferer, setIsOfferer] = useState<boolean | null>(null);
-  const [oracleAnnouncement, setOracleAnnouncement] = useState<{ ann: OracleAnnouncement, hex: string } | null>(null);
-  const [outcomes, setOutcomes] = useState<{ one: string, two: string }>({ one: "", two: "" })
-  const [offerHex, setOfferHex] = useState<string | null>(null);
-  const [signHex, setSignHex] = useState<string | null>(null);
-  const [txid, setTxid] = useState<string | null>(null);
-  const [balance, setBalance] = useState<{
+  const [isOfferer, setIsOffererState] = useState<boolean | null>(null);
+  const [oracleAnnouncement, setOracleAnnouncementState] = useState<{ ann: OracleAnnouncement, hex: string } | null>(null);
+  const [outcomes, setOutcomesState] = useState<{ one: string, two: string }>({ one: "", two: "" })
+  const [offerHex, setOfferHexState] = useState<string | null>(null);
+  const [signHex, setSignHexState] = useState<string | null>(null);
+  const [txid, setTxidState] = useState<string | null>(null);
+  const [balance, setBalanceState] = useState<{
     confirmed: number;
     unconfirmed: number;
   }>({ confirmed: 0, unconfirmed: 0 });
+  const [contract, setContract] = useState<Contract>({ contractId: null, pnl: null, fundingTxid: null })
+
+  const setIsOfferer = (value: boolean) => {
+    localStorage.setItem('isOfferer', JSON.stringify(value));
+    setIsOffererState(value);
+  };
+
+  const setOracleAnnouncement = (value: { ann: OracleAnnouncement, hex: string } | null) => {
+    localStorage.setItem('oracleAnnouncement', JSON.stringify(value));
+    setOracleAnnouncementState(value);
+  };
+
+  const setOutcomes = (value: { one: string, two: string }) => {
+    localStorage.setItem('outcomes', JSON.stringify(value));
+    setOutcomesState(value);
+  };
+
+  const setOfferHex = (value: string | null) => {
+    localStorage.setItem('offerHex', JSON.stringify(value));
+    setOfferHexState(value);
+  };
+
+  const setSignHex = (value: string | null) => {
+    localStorage.setItem('signHex', JSON.stringify(value));
+    setSignHexState(value);
+  };
+
+  const setTxid = (value: string | null) => {
+    localStorage.setItem('txid', JSON.stringify(value));
+    setTxidState(value);
+  };
+
+  const setBalance = (value: { confirmed: number; unconfirmed: number }) => {
+    localStorage.setItem('balance', JSON.stringify(value));
+    setBalanceState(value);
+  };
 
   const getBalance = async () => {
     const balance = await syncAndGetBalance();
@@ -48,9 +86,36 @@ export function DlcDevKitProvider({ children }: { children: ReactNode }) {
     setPublicKey(pubkey)
   }
 
+  const getWorkshopContract = async () => {
+    const contract = await getContract();
+    setContract(contract)
+  }
+
   useEffect(() => {
     getBalance()
     getPubkey()
+    getWorkshopContract()
+    // Load saved values from localStorage
+    const savedIsOfferer = localStorage.getItem('isOfferer');
+    if (savedIsOfferer) setIsOffererState(JSON.parse(savedIsOfferer));
+
+    const savedOracleAnnouncement = localStorage.getItem('oracleAnnouncement');
+    if (savedOracleAnnouncement) setOracleAnnouncementState(JSON.parse(savedOracleAnnouncement));
+
+    const savedOutcomes = localStorage.getItem('outcomes');
+    if (savedOutcomes) setOutcomesState(JSON.parse(savedOutcomes));
+
+    const savedOfferHex = localStorage.getItem('offerHex');
+    if (savedOfferHex) setOfferHexState(JSON.parse(savedOfferHex));
+
+    const savedSignHex = localStorage.getItem('signHex');
+    if (savedSignHex) setSignHexState(JSON.parse(savedSignHex));
+
+    const savedTxid = localStorage.getItem('txid');
+    if (savedTxid) setTxidState(JSON.parse(savedTxid));
+
+    const savedBalance = localStorage.getItem('balance');
+    if (savedBalance) setBalanceState(JSON.parse(savedBalance));
   }, [])
 
   const value = {
@@ -69,7 +134,9 @@ export function DlcDevKitProvider({ children }: { children: ReactNode }) {
     balance,
     setBalance,
     getBalance,
-    publicKey
+    publicKey,
+    contract,
+    getContract,
   };
 
   return (

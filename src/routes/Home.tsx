@@ -1,17 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-// import { StepContent } from '@/components/step-content'
 import { StepNavigation } from '@/components/step-navigation'
 import { Progress } from '@/components/ui/progress'
 import { Welcome } from './walkthrough/Welcome'
 import { FundWallet } from './walkthrough/FundWallet'
 import { Button } from '@/components/ui/button'
-import { syncAndGetBalance, WalletBalance } from '@/lib/functions'
-import { OracleAnnouncementComponent } from './walkthrough/OracleAnnouncement'
+import { OracleAnnouncementComponent, SignOracleAnnouncementComponent } from './walkthrough/OracleAnnouncement'
 import { useDlcDevKit } from '@/hooks/use-dlcdevkit'
 import { CreateOfferComponent } from './walkthrough/CreateOffer'
 import { SignContract } from './walkthrough/SignContract'
+import { AcceptContract } from './walkthrough/AcceptOffer'
 interface StepContentProps {
   title: string
   content: string
@@ -37,7 +36,7 @@ interface Step {
 }
 
 const baseSteps: Step[] = [
-  { title: 'Welcome', content: 'Content!', component: <Welcome /> },
+  { title: 'Welcome', content: '', component: <Welcome /> },
   { title: 'Let\'s fund a wallet', content: 'Getting some Bitcoin from the mutiny faucet.', component: <FundWallet /> },
 ]
 
@@ -48,13 +47,11 @@ const offererSteps: Step[] = [
 ]
 
 const acceptorSteps: Step[] = [
-  { title: 'Get your offer', content: 'Wait for the offerer to create the oracle announcement.', component: <Welcome /> },
-  { title: 'Accept the contract', content: 'Review and accept the contract from the offerer.', component: <Welcome /> },
-  { title: 'Sign the contract', content: 'Sign the accepted contract.', component: <Welcome /> }
+  { title: 'Accept your contract', content: 'Get the offer text from your friend', component: <AcceptContract /> },
 ]
 
 const finalSteps: Step[] = [
-  { title: 'Oracle Attestation', content: 'Wait for the oracle attestation.', component: <Welcome /> },
+  { title: 'Oracle Attestation', content: 'Wait for the oracle attestation.', component: <SignOracleAnnouncementComponent /> },
   { title: 'Wait for it to close', content: 'Wait for the contract to close.', component: <Welcome /> },
   { title: 'Send the bitcoin back', content: 'Complete the transaction.', component: <Welcome /> }
 ]
@@ -72,7 +69,7 @@ const getSteps = (isOfferer: boolean | null) => {
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState(0)
-  const [isOfferer, setIsOfferer] = useState<boolean | null>(null)
+  const { isOfferer, setIsOfferer } = useDlcDevKit()
   const steps = getSteps(isOfferer)
   const context = useDlcDevKit()
 
@@ -107,6 +104,7 @@ export default function Home() {
               <p className='text-white pr-4'>Pubkey: {context.publicKey}</p>
             </div>
             <Button onClick={async () => await context.getBalance()} className='bg-white text-black hover:bg-gray-400'>Sync Wallet</Button>
+            <Button onClick={async () => await context.getContract()} className='bg-white text-black hover:bg-gray-400'>Get Contract</Button>
           </div>
         </header>
         <div className="w-full max-w-4xl h-screen">

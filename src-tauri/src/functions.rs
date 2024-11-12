@@ -1,13 +1,10 @@
 use chrono::{Duration, Utc};
-use std::{
-    str::FromStr,
-    sync::Arc,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::{str::FromStr, sync::Arc};
 
 use crate::DdkState;
 use ddk::{
     dlc::{EnumerationPayout, Payout},
+    dlc_manager::{contract::Contract, Oracle, Storage},
     dlc_messages::{
         oracle_msgs::{OracleAnnouncement, OracleAttestation},
         Message, OfferDlc, SignDlc,
@@ -33,7 +30,6 @@ pub async fn create_oracle_announcement(
 
     // Get Unix timestamp
     let unix_timestamp = future_time.timestamp();
-    println!("UNIX TIMESTAMP {}", unix_timestamp);
     let announcement = state
         .ddk
         .oracle
@@ -52,20 +48,35 @@ pub async fn create_oracle_announcement(
     Ok((announcement, announcement_hex))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct SignOracleAnnouncement {
-    oracle_announcement: OracleAnnouncement,
+    event_id: String,
     outcome: String,
 }
 #[tauri::command]
 pub async fn sign_oracle_announcement(
     state: State<'_, Arc<DdkState>>,
     request: SignOracleAnnouncement,
-) -> Result<(OracleAttestation, String), String> {
+) -> Result<String, String> {
+    println!("Request: {:?}", request);
+
+    let announcement = state
+        .ddk
+        .oracle
+        .get_announcement(&request.event_id)
+        .await
+        .map_err(|e| {
+            format!(
+                "Could not find announcement. event_id={} error={}",
+                request.event_id,
+                e.to_string()
+            )
+        })?;
+
     let attestation = state
         .ddk
         .oracle
-        .sign_event(request.oracle_announcement, request.outcome)
+        .sign_event(announcement, request.outcome)
         .await
         .map_err(|e| {
             format!(
@@ -77,7 +88,7 @@ pub async fn sign_oracle_announcement(
     let attestation_bytes = serde_json::to_vec(&attestation)
         .map_err(|_| "OracleAnnouncement is malformed.".to_string())?;
     let attestation_hex = hex::encode(&attestation_bytes);
-    Ok((attestation, attestation_hex))
+    Ok(attestation_hex)
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -267,4 +278,62 @@ pub fn sync_and_get_balance(state: State<'_, Arc<DdkState>>) -> Result<WalletBal
 #[tauri::command]
 pub fn pubkey(state: State<'_, Arc<DdkState>>) -> Result<String, String> {
     Ok(state.ddk.transport.public_key().to_string())
+}
+
+#[derive(Serialize, Deserialize, Default)]
+pub struct DdkContract {
+    contract_id: Option<String>,
+    pnl: Option<i64>,
+    funding_txid: Option<String>,
+}
+
+#[tauri::command]
+pub async fn get_contract(state: State<'_, Arc<DdkState>>) -> Result<DdkContract, String> {
+    let contract = state
+        .ddk
+        .storage
+        .get_contracts()
+        .map_err(|e| format!("Could not get contract."))?;
+    println!("CONTRACT: {:?}", contract.first());
+
+    let workshop_contract = match contract.first() {
+        Some(c) => match c.to_owned() {
+            Contract::Offered(o) => DdkContract {
+                contract_id: Some(hex::encode(o.id)),
+                pnl: None,
+                funding_txid: None,
+            },
+            Contract::Accepted(a) => DdkContract {
+                contract_id: Some(hex::encode(a.get_contract_id())),
+                pnl: None,
+                funding_txid: None,
+            },
+            Contract::Confirmed(c) => DdkContract {
+                contract_id: Some(hex::encode(c.accepted_contract.get_contract_id())),
+                pnl: None,
+                funding_txid: Some(
+                    c.accepted_contract
+                        .dlc_transactions
+                        .fund
+                        .compute_txid()
+                        .to_string(),
+                ),
+            },
+            Contract::PreClosed(p) => DdkContract {
+                contract_id: Some(hex::encode(
+                    p.signed_contract.accepted_contract.get_contract_id(),
+                )),
+                pnl: None,
+                funding_txid: Some(p.signed_cet.compute_txid().to_string()),
+            },
+            Contract::Closed(c) => DdkContract {
+                contract_id: Some(hex::encode(c.contract_id)),
+                pnl: Some(c.pnl),
+                funding_txid: Some(c.signed_cet.unwrap().compute_txid().to_string()),
+            },
+            _ => DdkContract::default(),
+        },
+        None => DdkContract::default(),
+    };
+    Ok(workshop_contract)
 }

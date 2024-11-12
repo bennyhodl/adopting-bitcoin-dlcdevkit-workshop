@@ -5,13 +5,12 @@ import { useState } from "react";
 
 export const AcceptContract = () => {
   const context = useDlcDevKit();
-  const [signInput, setSignInput] = useState("");
+  const [offerInput, setOfferInput] = useState("");
 
   const handleSubmit = async () => {
     try {
-      const txid = await acceptOffer(signInput, context.publicKey);
-      context.setSignHex(signInput);
-      context.setTxid(txid);
+      const signMessage = await acceptOffer(offerInput, context.publicKey);
+      context.setSignHex(signMessage);
     } catch (error) {
       console.error("Error signing and broadcasting:", error);
     }
@@ -30,11 +29,11 @@ export const AcceptContract = () => {
     <div className="flex flex-col gap-4 p-4">
       <textarea
         className="w-full h-32 p-2 border rounded"
-        value={signInput}
-        onChange={(e) => setSignInput(e.target.value)}
-        placeholder="Enter sign hex..."
+        value={offerInput}
+        onChange={(e) => setOfferInput(e.target.value)}
+        placeholder="Enter offer hex..."
       />
-      <Button onClick={handleSubmit}>Sign and Broadcast</Button>
+      <Button onClick={handleSubmit}>Accept Contract</Button>
     </div>
   );
 };

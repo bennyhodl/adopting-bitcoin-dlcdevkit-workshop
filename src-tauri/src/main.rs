@@ -39,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
     );
 
     let ddk = Builder::new()
-        .set_name("ddk-app")
+        .set_name("ddk-tester")
         .set_seed_bytes(seed.private_key.secret_bytes())
         .set_esplora_host("http://127.0.0.1:30000".to_string())
         .set_transport(transport.clone())
