@@ -22,13 +22,14 @@ async fn main() -> anyhow::Result<()> {
         .with_max_level(level)
         .finish();
     tracing::subscriber::set_global_default(subscriber).unwrap();
-
+    let dir = homedir::my_home()
+        .unwrap()
+        .unwrap()
+        .join("dlcdevkit")
+        .join("workshop");
     let secp = Secp256k1::new();
-    let seed = xprv_from_path(
-        PathBuf::new().join("/Users/ben/.ddk/ddk-app"),
-        ddk::bitcoin::Network::Regtest,
-    )
-    .unwrap();
+    std::fs::create_dir_all(&dir).unwrap();
+    let seed = xprv_from_path(dir, ddk::bitcoin::Network::Regtest).unwrap();
 
     let transport = Arc::new(MemoryTransport::new(&secp));
     let storage = Arc::new(MemoryStorage::new());
@@ -41,11 +42,11 @@ async fn main() -> anyhow::Result<()> {
     let ddk = Builder::new()
         .set_name("ddk-tester")
         .set_seed_bytes(seed.private_key.secret_bytes())
-        .set_esplora_host("http://127.0.0.1:30000".to_string())
+        .set_esplora_host("https://mutinynet.com/api".to_string())
         .set_transport(transport.clone())
         .set_storage(storage.clone())
         .set_oracle(oracle.clone())
-        .set_network(ddk::bitcoin::Network::Regtest)
+        .set_network(ddk::bitcoin::Network::Signet)
         .finish()?;
 
     let client = reqwest::Client::new();
