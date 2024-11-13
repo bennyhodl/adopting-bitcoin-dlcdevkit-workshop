@@ -2,10 +2,12 @@ import { acceptOffer } from "@/lib/functions";
 import { Button } from "@/components/ui/button";
 import { useDlcDevKit } from "@/hooks/use-dlcdevkit";
 import { useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const AcceptContract = () => {
   const context = useDlcDevKit();
   const [offerInput, setOfferInput] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     try {
@@ -13,6 +15,7 @@ export const AcceptContract = () => {
       context.setSignHex(signMessage);
     } catch (error) {
       console.error("Error signing and broadcasting:", error);
+      setError(error as string)
     }
   };
 
@@ -27,6 +30,12 @@ export const AcceptContract = () => {
 
   return (
     <div className="flex flex-col gap-4 p-4">
+      {error && (
+        <Alert variant="destructive" className="my-4">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       <textarea
         className="w-full h-32 p-2 border rounded"
         value={offerInput}

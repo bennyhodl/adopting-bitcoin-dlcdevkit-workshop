@@ -17,9 +17,11 @@ export const FundWallet = () => {
   }, [])
   return (
     <div className="flex flex-col py-4 text-xl">
-      <p className="pb-8">You should have Bitcoin deposited to address: {address}</p>
-      <p>{JSON.stringify(context.balance)}</p>
-      <a href="https://mutinynet.com" target="_blank">Check your transaction.</a>
+      <p>Deposit Bitcoin to this address on <a href="https://faucet.mutinynet.com">Mutiny Net</a></p>
+      <p className="bold text-2xl pb-8">{address}</p>
+      <p>Confirmed balance: {context.balance.confirmed}</p>
+      <p>Unconfirmed balance: {context.balance.unconfirmed}</p>
+      {/* <a href="https://mutinynet.com" target="_blank">Check your transaction.</a> */}
     </div>
   )
 }

@@ -7,7 +7,7 @@ use ddk::{
     dlc_manager::{contract::Contract, Oracle, Storage},
     dlc_messages::{
         oracle_msgs::{OracleAnnouncement, OracleAttestation},
-        Message, OfferDlc, SignDlc,
+        AcceptDlc, Message, OfferDlc, SignDlc,
     },
     Transport,
 };
@@ -59,7 +59,6 @@ pub async fn sign_oracle_announcement(
     request: SignOracleAnnouncement,
 ) -> Result<String, String> {
     println!("Request: {:?}", request);
-
     let announcement = state
         .ddk
         .oracle
@@ -193,22 +192,25 @@ pub async fn accept_offer(
 ) -> Result<String, String> {
     let counter_party = ddk::bitcoin::secp256k1::PublicKey::from_str(&public_key)
         .map_err(|_| "Malformed public key.")?;
+    let offer_bytes = hex::decode(offer)
+        .map_err(|e| format!("Could not hex decode offer. error={}", e.to_string()))?;
     let offer: OfferDlc =
-        serde_json::from_str(&offer).map_err(|_| "Malformed offer".to_string())?;
-    let accept = state
+        serde_json::from_slice(&offer_bytes).map_err(|_| "Malformed offer".to_string())?;
+    state
         .ddk
         .manager
-        .on_dlc_message(&Message::Offer(offer), counter_party)
+        .on_dlc_message(&Message::Offer(offer.clone()), counter_party)
+        .map_err(|e| format!("Could not accept offered contract. error={}", e.to_string()))?;
+
+    let accept = state
+        .ddk
+        .accept_dlc_offer(offer.temporary_contract_id)
         .map_err(|e| format!("Could not accept contract. error={}", e.to_string()))?;
 
-    match accept.unwrap() {
-        Message::Sign(s) => {
-            let sign_bytes = serde_json::to_vec(&s).unwrap();
-            let sign_hex = hex::encode(&sign_bytes);
-            Ok(sign_hex)
-        }
-        _ => Err("Not a sign contract.".to_string()),
-    }
+    let accept_bytes =
+        serde_json::to_vec(&accept.2).map_err(|_| "converting accept to bytes".to_string())?;
+    let accept_hex = hex::encode(accept_bytes);
+    Ok(accept_hex)
 }
 
 #[tauri::command]
@@ -219,23 +221,29 @@ pub async fn sign_and_broadcast_offer(
 ) -> Result<String, String> {
     let counter_party = ddk::bitcoin::secp256k1::PublicKey::from_str(&public_key)
         .map_err(|_| "Malformed public key.")?;
-    let sign_dlc: SignDlc =
-        serde_json::from_str(&sign).map_err(|_| "Malformed offer".to_string())?;
-    state
+    let accept_bytes =
+        hex::decode(sign).map_err(|_| "Could not convert sign message to bytes".to_string())?;
+    let accept_dlc: AcceptDlc =
+        serde_json::from_slice(&accept_bytes).map_err(|_| "Malformed offer".to_string())?;
+    let contract = state
         .ddk
         .manager
-        .on_dlc_message(&Message::Sign(sign_dlc), counter_party)
+        .on_dlc_message(&Message::Accept(accept_dlc), counter_party)
         .map_err(|e| format!("Could not accept contract. error={}", e.to_string()))?;
 
-    // match accept.unwrap() {
-    //     Message::Sign(s) => {
-    //         let sign_bytes = serde_json::to_vec(&s).unwrap();
-    //         let sign_hex = hex::encode(&sign_bytes);
-    //         Ok(sign_hex)
-    //     }
-    //     _ => Err("Not a sign contract.".to_string()),
-    // }
-    Ok("signed!".to_string())
+    println!("Received contract");
+    if let Some(msg) = contract {
+        match msg {
+            Message::Sign(s) => {
+                let sign_bytes = serde_json::to_vec(&s).unwrap();
+                let sign_hex = hex::encode(&sign_bytes);
+                Ok(sign_hex)
+            }
+            _ => Ok("No contract".to_string()),
+        }
+    } else {
+        return Ok("No contract.".to_string());
+    }
 }
 
 #[tauri::command]
@@ -285,6 +293,7 @@ pub struct DdkContract {
     contract_id: Option<String>,
     pnl: Option<i64>,
     funding_txid: Option<String>,
+    state: String,
 }
 
 #[tauri::command]
@@ -293,8 +302,7 @@ pub async fn get_contract(state: State<'_, Arc<DdkState>>) -> Result<DdkContract
         .ddk
         .storage
         .get_contracts()
-        .map_err(|e| format!("Could not get contract."))?;
-    println!("CONTRACT: {:?}", contract.first());
+        .map_err(|_| format!("Could not get contract."))?;
 
     let workshop_contract = match contract.first() {
         Some(c) => match c.to_owned() {
@@ -302,11 +310,13 @@ pub async fn get_contract(state: State<'_, Arc<DdkState>>) -> Result<DdkContract
                 contract_id: Some(hex::encode(o.id)),
                 pnl: None,
                 funding_txid: None,
+                state: "offered".to_string(),
             },
             Contract::Accepted(a) => DdkContract {
                 contract_id: Some(hex::encode(a.get_contract_id())),
                 pnl: None,
                 funding_txid: None,
+                state: "accepted".to_string(),
             },
             Contract::Confirmed(c) => DdkContract {
                 contract_id: Some(hex::encode(c.accepted_contract.get_contract_id())),
@@ -318,6 +328,7 @@ pub async fn get_contract(state: State<'_, Arc<DdkState>>) -> Result<DdkContract
                         .compute_txid()
                         .to_string(),
                 ),
+                state: "confirmed".to_string(),
             },
             Contract::PreClosed(p) => DdkContract {
                 contract_id: Some(hex::encode(
@@ -325,11 +336,13 @@ pub async fn get_contract(state: State<'_, Arc<DdkState>>) -> Result<DdkContract
                 )),
                 pnl: None,
                 funding_txid: Some(p.signed_cet.compute_txid().to_string()),
+                state: "pre-closed".to_string(),
             },
             Contract::Closed(c) => DdkContract {
                 contract_id: Some(hex::encode(c.contract_id)),
                 pnl: Some(c.pnl),
                 funding_txid: Some(c.signed_cet.unwrap().compute_txid().to_string()),
+                state: "closed".to_string(),
             },
             _ => DdkContract::default(),
         },

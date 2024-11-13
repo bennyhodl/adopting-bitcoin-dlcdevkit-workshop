@@ -2,10 +2,11 @@ import { createOracleAnnouncement, CreateOracleAnnouncement, SignOracleAnnouncem
 import { Button } from "@/components/ui/button";
 import { useDlcDevKit } from "@/hooks/use-dlcdevkit";
 import { useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const OracleAnnouncementComponent = () => {
   const context = useDlcDevKit()
-  console.log(context.oracleAnnouncement, context.outcomes)
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     const request: CreateOracleAnnouncement = {
@@ -17,6 +18,7 @@ export const OracleAnnouncementComponent = () => {
       context.setOracleAnnouncement({ ann, hex });
     } catch (error) {
       console.error("Error creating oracle announcement:", error);
+      setError(error as string);
     }
   };
 
@@ -35,6 +37,12 @@ export const OracleAnnouncementComponent = () => {
 
   return (
     <div className="flex flex-col gap-4 p-4">
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       <input
         type="text"
         value={context.outcomes.one}
@@ -57,6 +65,8 @@ export const OracleAnnouncementComponent = () => {
 export const SignOracleAnnouncementComponent = () => {
   let { oracleAnnouncement, outcomes } = useDlcDevKit()
   const [winner, setWinner] = useState("")
+  const [error, setError] = useState<string | null>(null);
+
   if (!oracleAnnouncement) {
     return (
       <div className="pt-12 h-96 flex flex-col justify-center">
@@ -74,15 +84,21 @@ export const SignOracleAnnouncementComponent = () => {
     console.log("Request", request);
 
     try {
-      const hex = await signOracleAnnouncement(request);
-
+      await signOracleAnnouncement(request);
     } catch (error) {
       console.error("Error creating oracle attestation:", error);
+      setError(error as string);
     }
   };
   return (
     <div>
       <h3>Pick which outcome you want to sign for.</h3>
+      {error && (
+        <Alert variant="destructive" className="my-4">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       <div className="flex flex-col gap-2 w-1/2 justify-center m-auto">
         <label className="flex items-center gap-2">
           <input

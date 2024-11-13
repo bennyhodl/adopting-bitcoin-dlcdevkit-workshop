@@ -80,6 +80,7 @@ export interface Contract {
   contractId: string | null;
   pnl: number | null;
   fundingTxid: string | null;
+  state: string;
 }
 
 export async function getContract(): Promise<Contract> {

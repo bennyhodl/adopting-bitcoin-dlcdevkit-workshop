@@ -11,6 +11,7 @@ import { useDlcDevKit } from '@/hooks/use-dlcdevkit'
 import { CreateOfferComponent } from './walkthrough/CreateOffer'
 import { SignContract } from './walkthrough/SignContract'
 import { AcceptContract } from './walkthrough/AcceptOffer'
+import { CloseContract } from './walkthrough/CloseContract'
 interface StepContentProps {
   title: string
   content: string
@@ -52,7 +53,7 @@ const acceptorSteps: Step[] = [
 
 const finalSteps: Step[] = [
   { title: 'Oracle Attestation', content: 'Wait for the oracle attestation.', component: <SignOracleAnnouncementComponent /> },
-  { title: 'Wait for it to close', content: 'Wait for the contract to close.', component: <Welcome /> },
+  { title: 'Wait for it to close', content: 'Wait for the contract to close.', component: <CloseContract /> },
   { title: 'Send the bitcoin back', content: 'Complete the transaction.', component: <Welcome /> }
 ]
 
@@ -69,7 +70,7 @@ const getSteps = (isOfferer: boolean | null) => {
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState(0)
-  const { isOfferer, setIsOfferer } = useDlcDevKit()
+  const { isOfferer, setIsOfferer, contract } = useDlcDevKit()
   const steps = getSteps(isOfferer)
   const context = useDlcDevKit()
 
@@ -96,15 +97,17 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex flex-col items-center justify-between h-screen">
-        <header className="p-4 bg-primary text-primary-foreground w-screen flex flex-row justify-between px-8">
-          <h1 className="text-2xl font-bold">Handshake Bets with DlcDevK</h1>
-          <div className='flex flex-row items-center text-end'>
-            <div className='flex flex-col'>
-              <p className='text-white pr-4'>Balance: {JSON.stringify(context.balance)}</p>
-              <p className='text-white pr-4'>Pubkey: {context.publicKey}</p>
-            </div>
+        <header className="p-4 bg-primary text-primary-foreground w-screen flex flex-col justify-between px-8">
+          <div className='flex flex-row w-full justify-between'>
+            <h1 className="text-2xl font-bold">Handshake Bets with DlcDevK</h1>
             <Button onClick={async () => await context.getBalance()} className='bg-white text-black hover:bg-gray-400'>Sync Wallet</Button>
-            <Button onClick={async () => await context.getContract()} className='bg-white text-black hover:bg-gray-400'>Get Contract</Button>
+          </div>
+          <div className='flex flex-col'>
+            <p>Contract State: {contract.state}</p>
+            <p>Transaction Id: {contract.fundingTxid ?? "No transaction"}</p>
+            <p className='text-white pr-4'>Balance: {context.balance.confirmed} - Unconfirmed: {context.balance.unconfirmed}</p>
+            <p className='text-white pr-4'>Pubkey: {context.publicKey}</p>
+
           </div>
         </header>
         <div className="w-full max-w-4xl h-screen">

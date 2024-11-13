@@ -39,7 +39,7 @@ export function DlcDevKitProvider({ children }: { children: ReactNode }) {
     confirmed: number;
     unconfirmed: number;
   }>({ confirmed: 0, unconfirmed: 0 });
-  const [contract, setContract] = useState<Contract>({ contractId: null, pnl: null, fundingTxid: null })
+  const [contract, setContract] = useState<Contract>({ contractId: null, pnl: null, fundingTxid: null, state: "" })
 
   const setIsOfferer = (value: boolean) => {
     localStorage.setItem('isOfferer', JSON.stringify(value));
@@ -117,6 +117,18 @@ export function DlcDevKitProvider({ children }: { children: ReactNode }) {
     const savedBalance = localStorage.getItem('balance');
     if (savedBalance) setBalanceState(JSON.parse(savedBalance));
   }, [])
+
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      getWorkshopContract()
+    }, 10000);
+
+    return () => {
+      clearInterval(interval);
+
+    };
+  }, []);
 
   const value = {
     isOfferer,

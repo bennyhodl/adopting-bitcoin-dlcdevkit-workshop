@@ -32,4 +32,5 @@ hex = "0.4.3"
 reqwest = "0.12.9"
 chrono = "0.4.38"
 homedir = "0.3.4"
+clap = { version = "4.5.20", features = ["derive"] }
 
