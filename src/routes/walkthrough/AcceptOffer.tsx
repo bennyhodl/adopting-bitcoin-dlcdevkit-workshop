@@ -19,11 +19,11 @@ export const AcceptContract = () => {
     }
   };
 
-  if (context.txid) {
+  if (context.signHex) {
     return (
       <div className="p-4">
-        <h3>Contract Signed!</h3>
-        <p className="break-words">Transaction ID: {context.txid}</p>
+        <h3 className="bold text-xl">Signed Contract</h3>
+        <p className="break-words h-96 overflow-y-auto rounded-md border border-black p-2">{context.signHex}</p>
       </div>
     );
   }

@@ -5,10 +5,7 @@ use crate::DdkState;
 use ddk::{
     dlc::{EnumerationPayout, Payout},
     dlc_manager::{contract::Contract, Oracle, Storage},
-    dlc_messages::{
-        oracle_msgs::{OracleAnnouncement, OracleAttestation},
-        AcceptDlc, Message, OfferDlc, SignDlc,
-    },
+    dlc_messages::{oracle_msgs::OracleAnnouncement, AcceptDlc, Message, OfferDlc},
     Transport,
 };
 use serde::{Deserialize, Serialize};

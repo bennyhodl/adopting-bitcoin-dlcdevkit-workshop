@@ -9,6 +9,7 @@ export interface OracleAnnouncement {
   oraclePublicKey: string;
   oracleEvent: {
     eventId: string;
+    eventMaturityEpoch: number;
   };
 }
 

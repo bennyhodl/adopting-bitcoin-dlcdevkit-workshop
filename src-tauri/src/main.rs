@@ -50,11 +50,11 @@ async fn main() -> anyhow::Result<()> {
     let ddk = Builder::new()
         .set_name("ddk-tester")
         .set_seed_bytes(seed.private_key.secret_bytes())
-        .set_esplora_host("http://localhost:30000".to_string())
+        .set_esplora_host("https://mutinynet.com/api".to_string())
         .set_transport(transport.clone())
         .set_storage(storage.clone())
         .set_oracle(oracle.clone())
-        .set_network(ddk::bitcoin::Network::Regtest)
+        .set_network(ddk::bitcoin::Network::Signet)
         .finish()?;
 
     let client = reqwest::Client::new();
