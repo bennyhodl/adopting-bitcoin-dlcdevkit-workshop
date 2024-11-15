@@ -145,7 +145,7 @@ pub async fn create_offer(
         EnumerationPayout {
             outcome: mine.clone(),
             payout: Payout {
-                offer: 2_000_000,
+                offer: 1_000_000,
                 accept: 0,
             },
         },
@@ -153,15 +153,15 @@ pub async fn create_offer(
             outcome: theirs.clone(),
             payout: Payout {
                 offer: 0,
-                accept: 2_000_000,
+                accept: 1_000_000,
             },
         },
     ];
 
     let input = ddk_payouts::enumeration::create_contract_input(
         payouts,
-        1_000_000,
-        1_000_000,
+        500_000,
+        500_000,
         1,
         request.announcement.oracle_public_key.to_string(),
         request.announcement.oracle_event.event_id,
@@ -290,6 +290,7 @@ pub struct DdkContract {
     contract_id: Option<String>,
     pnl: Option<i64>,
     funding_txid: Option<String>,
+    closing_txid: Option<String>,
     state: String,
 }
 
@@ -307,12 +308,14 @@ pub async fn get_contract(state: State<'_, Arc<DdkState>>) -> Result<DdkContract
                 contract_id: Some(hex::encode(o.id)),
                 pnl: None,
                 funding_txid: None,
+                closing_txid: None,
                 state: "offered".to_string(),
             },
             Contract::Accepted(a) => DdkContract {
                 contract_id: Some(hex::encode(a.get_contract_id())),
                 pnl: None,
                 funding_txid: None,
+                closing_txid: None,
                 state: "accepted".to_string(),
             },
             Contract::Confirmed(c) => DdkContract {
@@ -325,6 +328,7 @@ pub async fn get_contract(state: State<'_, Arc<DdkState>>) -> Result<DdkContract
                         .compute_txid()
                         .to_string(),
                 ),
+                closing_txid: None,
                 state: "confirmed".to_string(),
             },
             Contract::PreClosed(p) => DdkContract {
@@ -332,13 +336,22 @@ pub async fn get_contract(state: State<'_, Arc<DdkState>>) -> Result<DdkContract
                     p.signed_contract.accepted_contract.get_contract_id(),
                 )),
                 pnl: None,
-                funding_txid: Some(p.signed_cet.compute_txid().to_string()),
+                funding_txid: Some(
+                    p.signed_contract
+                        .accepted_contract
+                        .dlc_transactions
+                        .fund
+                        .compute_txid()
+                        .to_string(),
+                ),
+                closing_txid: Some(p.signed_cet.compute_txid().to_string()),
                 state: "pre-closed".to_string(),
             },
             Contract::Closed(c) => DdkContract {
                 contract_id: Some(hex::encode(c.contract_id)),
                 pnl: Some(c.pnl),
-                funding_txid: Some(c.signed_cet.unwrap().compute_txid().to_string()),
+                funding_txid: None,
+                closing_txid: Some(c.signed_cet.unwrap().compute_txid().to_string()),
                 state: "closed".to_string(),
             },
             _ => DdkContract::default(),
@@ -346,4 +359,19 @@ pub async fn get_contract(state: State<'_, Arc<DdkState>>) -> Result<DdkContract
         None => DdkContract::default(),
     };
     Ok(workshop_contract)
+}
+
+#[tauri::command]
+pub async fn send_bitcoin_back(state: State<'_, Arc<DdkState>>) -> Result<String, String> {
+    Ok(state
+        .ddk
+        .wallet
+        .send_all(
+            ddk::bitcoin::Address::from_str("tb1qd28npep0s8frcm3y7dxqajkcy2m40eysplyr9v")
+                .unwrap()
+                .assume_checked(),
+            ddk::bitcoin::FeeRate::from_sat_per_vb(1).unwrap(),
+        )
+        .map_err(|e| format!("Could not send bitcoin back. error={}", e.to_string()))?
+        .to_string())
 }

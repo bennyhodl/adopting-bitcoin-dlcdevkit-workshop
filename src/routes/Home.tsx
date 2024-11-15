@@ -12,6 +12,8 @@ import { CreateOfferComponent } from './walkthrough/CreateOffer'
 import { SignContract } from './walkthrough/SignContract'
 import { AcceptContract } from './walkthrough/AcceptOffer'
 import { CloseContract } from './walkthrough/CloseContract'
+import ModalDialog from '@/components/Modal'
+import { SendBitcoinBack } from './walkthrough/SendBitcoinBack'
 interface StepContentProps {
   title: string
   content: string
@@ -37,24 +39,24 @@ interface Step {
 }
 
 const baseSteps: Step[] = [
-  { title: 'Welcome', content: '', component: <Welcome /> },
-  { title: 'Let\'s fund a wallet', content: 'Getting some Bitcoin from the mutiny faucet.', component: <FundWallet /> },
+  { title: 'Today we are going to do a demo of DlcDevKit.', content: '', component: <Welcome /> },
+  { title: 'Let\'s fund your wallet', content: '', component: <FundWallet /> },
 ]
 
 const offererSteps: Step[] = [
-  { title: 'Create an oracle announcement', content: 'Create the oracle announcement for your bet.', component: <OracleAnnouncementComponent /> },
-  { title: 'Offer a contract', content: 'Create and offer the contract to your counterparty.', component: <CreateOfferComponent /> },
-  { title: 'Wait for signature', content: 'Wait for your counterparty to sign the contract.', component: <SignContract /> }
+  { title: 'Create your bet', content: 'Create the oracle announcement for your bet to be signed later to close the contract.', component: <OracleAnnouncementComponent /> },
+  { title: 'Offer a contract', content: 'Pick your winner and create the betting contract. This step creates the DLC offer to be accepted by a counterparty.', component: <CreateOfferComponent /> },
+  { title: 'Wait for your friend to accept the contract', content: 'Input your counterparties accept message.', component: <SignContract /> }
 ]
 
 const acceptorSteps: Step[] = [
-  { title: 'Accept your contract', content: 'Get the offer text from your friend', component: <AcceptContract /> },
+  { title: 'Accept the handshake bet', content: 'Input the offer contract from your friend to accept the contract.', component: <AcceptContract /> },
 ]
 
 const finalSteps: Step[] = [
-  { title: 'Oracle Attestation', content: 'Wait for the oracle attestation.', component: <SignOracleAnnouncementComponent /> },
-  { title: 'Wait for it to close', content: 'Wait for the contract to close.', component: <CloseContract /> },
-  { title: 'Send the bitcoin back', content: 'Complete the transaction.', component: <Welcome /> }
+  { title: 'Select the bet outcome', content: '', component: <SignOracleAnnouncementComponent /> },
+  { title: 'Wait for the contract to expire to close the contract.', content: 'The contract has a contract maturity. When the maturity expires, the contract is then closed with the contract outcome.', component: <CloseContract /> },
+  { title: 'Send the bitcoin back', content: 'Complete the transaction.', component: <SendBitcoinBack /> }
 ]
 
 const getSteps = (isOfferer: boolean | null) => {
@@ -70,9 +72,8 @@ const getSteps = (isOfferer: boolean | null) => {
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState(0)
-  const { isOfferer, setIsOfferer, contract } = useDlcDevKit()
+  const { isOfferer, setIsOfferer } = useDlcDevKit()
   const steps = getSteps(isOfferer)
-  const context = useDlcDevKit()
 
   const handleNext = () => {
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1))
@@ -99,15 +100,9 @@ export default function Home() {
       <main className="flex flex-col items-center justify-between h-screen">
         <header className="p-4 bg-primary text-primary-foreground w-screen flex flex-col justify-between px-8">
           <div className='flex flex-row w-full justify-between'>
-            <h1 className="text-2xl font-bold">Handshake Bets with DlcDevK</h1>
-            <Button onClick={async () => await context.getBalance()} className='bg-white text-black hover:bg-gray-400'>Sync Wallet</Button>
-          </div>
-          <div className='flex flex-col'>
-            <p>Contract State: {contract.state}</p>
-            <p>Transaction Id: {contract.fundingTxid ?? "No transaction"}</p>
-            <p className='text-white pr-4'>Balance: {context.balance.confirmed} - Unconfirmed: {context.balance.unconfirmed}</p>
-            <p className='text-white pr-4'>Pubkey: {context.publicKey}</p>
-
+            <h1 className="text-2xl font-bold">Handshake Bets with DlcDevKit</h1>
+            {/* <Button onClick={async () => await context.getBalance()} className='bg-white text-black hover:bg-gray-400'>Sync Wallet</Button> */}
+            <ModalDialog />
           </div>
         </header>
         <div className="w-full max-w-4xl h-screen">

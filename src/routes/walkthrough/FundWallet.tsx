@@ -21,7 +21,6 @@ export const FundWallet = () => {
       <p className="bold text-2xl pb-8">{address}</p>
       <p>Confirmed balance: {context.balance.confirmed}</p>
       <p>Unconfirmed balance: {context.balance.unconfirmed}</p>
-      {/* <a href="https://mutinynet.com" target="_blank">Check your transaction.</a> */}
     </div>
   )
 }

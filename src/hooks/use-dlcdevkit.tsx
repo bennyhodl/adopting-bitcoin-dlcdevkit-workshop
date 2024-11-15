@@ -23,6 +23,8 @@ interface DlcDevKitContextType {
   publicKey: string
   contract: Contract
   getContract: () => void;
+  attestation: string | null;
+  setAttestation: (attestation: string | null) => void
 }
 
 const DlcDevKitContext = createContext<DlcDevKitContextType | undefined>(undefined);
@@ -31,6 +33,7 @@ export function DlcDevKitProvider({ children }: { children: ReactNode }) {
   const [publicKey, setPublicKey] = useState("")
   const [isOfferer, setIsOffererState] = useState<boolean | null>(null);
   const [oracleAnnouncement, setOracleAnnouncementState] = useState<{ ann: OracleAnnouncement, hex: string } | null>(null);
+  const [attestation, setAttestation] = useState<string | null>(null);
   const [outcomes, setOutcomesState] = useState<{ one: string, two: string }>({ one: "", two: "" })
   const [offerHex, setOfferHexState] = useState<string | null>(null);
   const [signHex, setSignHexState] = useState<string | null>(null);
@@ -39,7 +42,7 @@ export function DlcDevKitProvider({ children }: { children: ReactNode }) {
     confirmed: number;
     unconfirmed: number;
   }>({ confirmed: 0, unconfirmed: 0 });
-  const [contract, setContract] = useState<Contract>({ contractId: null, pnl: null, fundingTxid: null, state: "" })
+  const [contract, setContract] = useState<Contract>({ contractId: null, pnl: null, fundingTxid: "No funding transaction yet", closingTxid: "Contract not closed yet", state: "No contract yet" })
 
   const setIsOfferer = (value: boolean) => {
     localStorage.setItem('isOfferer', JSON.stringify(value));
@@ -149,6 +152,8 @@ export function DlcDevKitProvider({ children }: { children: ReactNode }) {
     publicKey,
     contract,
     getContract,
+    attestation,
+    setAttestation,
   };
 
   return (
@@ -165,3 +170,13 @@ export function useDlcDevKit() {
   }
   return context;
 }
+
+export const clearLocalStorage = () => {
+  localStorage.removeItem('isOfferer');
+  localStorage.removeItem('oracleAnnouncement');
+  localStorage.removeItem('outcomes');
+  localStorage.removeItem('offerHex');
+  localStorage.removeItem('signHex');
+  localStorage.removeItem('txid');
+  localStorage.removeItem('balance');
+};

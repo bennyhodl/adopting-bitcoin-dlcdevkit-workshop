@@ -34,7 +34,6 @@ export async function createOracleAnnouncement(
 export async function signOracleAnnouncement(
   request: SignOracleAnnouncement
 ): Promise<string> {
-  console.log("Sending to tauri ", request);
   return invoke("sign_oracle_announcement", { request });
 }
 
@@ -81,9 +80,14 @@ export interface Contract {
   contractId: string | null;
   pnl: number | null;
   fundingTxid: string | null;
+  closingTxid: string | null;
   state: string;
 }
 
 export async function getContract(): Promise<Contract> {
   return invoke("get_contract");
+}
+
+export async function sendBitcoinBack(): Promise<string> {
+  return invoke("send_bitcoin_back");
 }

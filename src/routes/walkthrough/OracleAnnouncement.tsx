@@ -63,7 +63,7 @@ export const OracleAnnouncementComponent = () => {
 };
 
 export const SignOracleAnnouncementComponent = () => {
-  let { oracleAnnouncement, outcomes } = useDlcDevKit()
+  let { oracleAnnouncement, outcomes, attestation, setAttestation } = useDlcDevKit()
   const [winner, setWinner] = useState("")
   const [error, setError] = useState<string | null>(null);
 
@@ -84,12 +84,24 @@ export const SignOracleAnnouncementComponent = () => {
     console.log("Request", request);
 
     try {
-      await signOracleAnnouncement(request);
+      const attestation = await signOracleAnnouncement(request);
+      setAttestation(attestation)
+
     } catch (error) {
       console.error("Error creating oracle attestation:", error);
       setError(error as string);
     }
   };
+
+  if (attestation) {
+    return (
+      <div className="p-4">
+        <h3 className="bold text-xl">Oracle Announcement signed. Winner: {winner}</h3>
+        <p className="break-words h-96 overflow-y-auto rounded-md border border-black p-2">{attestation}</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h3>Pick which outcome you want to sign for.</h3>
