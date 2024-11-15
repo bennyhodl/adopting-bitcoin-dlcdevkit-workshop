@@ -91,3 +91,10 @@ export async function getContract(): Promise<Contract> {
 export async function sendBitcoinBack(): Promise<string> {
   return invoke("send_bitcoin_back");
 }
+
+export async function broadcast(
+  sign: string,
+  publicKey: string
+): Promise<string> {
+  return invoke("broadcast_offer", { sign, publicKey });
+}

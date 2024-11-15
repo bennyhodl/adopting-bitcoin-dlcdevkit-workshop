@@ -31,6 +31,7 @@ pub fn run(ddk: Arc<DdkState>) {
             functions::sync_and_get_balance,
             functions::pubkey,
             functions::send_bitcoin_back,
+            functions::broadcast_offer,
         ])
         .setup(move |app| {
             let address = ddk_clone

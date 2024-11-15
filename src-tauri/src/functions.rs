@@ -5,7 +5,7 @@ use crate::DdkState;
 use ddk::{
     dlc::{EnumerationPayout, Payout},
     dlc_manager::{contract::Contract, Oracle, Storage},
-    dlc_messages::{oracle_msgs::OracleAnnouncement, AcceptDlc, Message, OfferDlc},
+    dlc_messages::{oracle_msgs::OracleAnnouncement, AcceptDlc, Message, OfferDlc, SignDlc},
     Transport,
 };
 use serde::{Deserialize, Serialize};
@@ -244,6 +244,27 @@ pub async fn sign_and_broadcast_offer(
 }
 
 #[tauri::command]
+pub async fn broadcast_offer(
+    state: State<'_, Arc<DdkState>>,
+    sign: String,
+    public_key: String,
+) -> Result<String, String> {
+    let counter_party = ddk::bitcoin::secp256k1::PublicKey::from_str(&public_key)
+        .map_err(|_| "Malformed public key.")?;
+    let sign_bytes =
+        hex::decode(sign).map_err(|_| "Could not convert sign message to bytes".to_string())?;
+    let sign_dlc: SignDlc =
+        serde_json::from_slice(&sign_bytes).map_err(|_| "Malformed offer".to_string())?;
+    state
+        .ddk
+        .manager
+        .on_dlc_message(&Message::Sign(sign_dlc), counter_party)
+        .map_err(|e| format!("Could not accept contract. error={}", e.to_string()))?;
+
+    Ok("Contract broadcasted!".to_string())
+}
+
+#[tauri::command]
 pub async fn new_address(state: State<'_, Arc<DdkState>>) -> Result<String, String> {
     Ok(state
         .ddk
@@ -301,6 +322,8 @@ pub async fn get_contract(state: State<'_, Arc<DdkState>>) -> Result<DdkContract
         .storage
         .get_contracts()
         .map_err(|_| format!("Could not get contract."))?;
+
+    println!("Contracts {:?}", contract);
 
     let workshop_contract = match contract.first() {
         Some(c) => match c.to_owned() {

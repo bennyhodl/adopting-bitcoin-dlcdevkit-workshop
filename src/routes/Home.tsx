@@ -14,6 +14,7 @@ import { AcceptContract } from './walkthrough/AcceptOffer'
 import { CloseContract } from './walkthrough/CloseContract'
 import ModalDialog from '@/components/Modal'
 import { SendBitcoinBack } from './walkthrough/SendBitcoinBack'
+import { Broadcast } from './walkthrough/Broadcast'
 interface StepContentProps {
   title: string
   content: string
@@ -51,6 +52,7 @@ const offererSteps: Step[] = [
 
 const acceptorSteps: Step[] = [
   { title: 'Accept the handshake bet', content: 'Input the offer contract from your friend to accept the contract.', component: <AcceptContract /> },
+  { title: 'Broadcast the contract.', content: 'Once your counterparty has signed the contract, you can now broadcast the transaction.', component: <Broadcast /> },
 ]
 
 const finalSteps: Step[] = [
