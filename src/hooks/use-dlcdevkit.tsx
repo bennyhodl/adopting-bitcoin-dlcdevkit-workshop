@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { Contract, getPublicKey, OracleAnnouncement, syncAndGetBalance, getContract } from '@/lib/functions';
+import { Contract, getPublicKey, OracleAnnouncement, syncAndGetBalance, getContract, newAddress } from '@/lib/functions';
 
 interface DlcDevKitContextType {
   isOfferer: boolean | null;
@@ -25,12 +25,15 @@ interface DlcDevKitContextType {
   getContract: () => void;
   attestation: string | null;
   setAttestation: (attestation: string | null) => void
+  address: string | null;
+  getAddress: () => void
 }
 
 const DlcDevKitContext = createContext<DlcDevKitContextType | undefined>(undefined);
 
 export function DlcDevKitProvider({ children }: { children: ReactNode }) {
   const [publicKey, setPublicKey] = useState("")
+  const [address, setAddress] = useState<string | null>(null)
   const [isOfferer, setIsOffererState] = useState<boolean | null>(null);
   const [oracleAnnouncement, setOracleAnnouncementState] = useState<{ ann: OracleAnnouncement, hex: string } | null>(null);
   const [attestation, setAttestation] = useState<string | null>(null);
@@ -53,6 +56,11 @@ export function DlcDevKitProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('oracleAnnouncement', JSON.stringify(value));
     setOracleAnnouncementState(value);
   };
+
+  const setBitcoinAddress = (address: string) => {
+    localStorage.setItem('address', address);
+    setAddress(address)
+  }
 
   const setOutcomes = (value: { one: string, two: string }) => {
     localStorage.setItem('outcomes', JSON.stringify(value));
@@ -94,10 +102,16 @@ export function DlcDevKitProvider({ children }: { children: ReactNode }) {
     setContract(contract)
   }
 
+  const getAddress = async () => {
+    const address = await newAddress();
+    setBitcoinAddress(address)
+  }
+
   useEffect(() => {
     getBalance()
     getPubkey()
     getWorkshopContract()
+    getAddress()
     // Load saved values from localStorage
     const savedIsOfferer = localStorage.getItem('isOfferer');
     if (savedIsOfferer) setIsOffererState(JSON.parse(savedIsOfferer));
@@ -154,6 +168,8 @@ export function DlcDevKitProvider({ children }: { children: ReactNode }) {
     getContract,
     attestation,
     setAttestation,
+    address,
+    getAddress,
   };
 
   return (
